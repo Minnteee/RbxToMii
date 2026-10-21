@@ -1,0 +1,25 @@
+RbxToMii License (credit required)
+
+Copyright (c) 2026 Minnteee - https://github.com/Minnteee/RbxToMii
+
+1. You may download, use and share the release files of RbxToMii for free.
+
+2. Credit is required. If you publish anything that is based on, derived from or made with this project - for
+   example your own or a better version of RbxToMii, another tool or mod that uses its files, code, data or
+   techniques, or a re-upload - you must give clear and visible credit, at least in the description or README of
+   your project (and in the program's own "about" text, if it has one):
+
+       Based on RbxToMii by Minnteee - https://github.com/Minnteee/RbxToMii
+
+3. You may not present this project or parts of it as your own work.
+
+4. You may not sell this project or anything based on it, or put it behind a paywall.
+
+5. Re-uploads must link back to https://github.com/Minnteee/RbxToMii and must say clearly if anything was changed.
+
+6. No warranty. This project is provided "as is", without any warranty. Use it at your own risk and keep backups of
+   your saves. The author is not liable for any damage or lost data.
+
+7. Third-party content is not covered by this license. Tomodachi Life: Living the Dream and its game files belong to
+   Nintendo. Roblox, Roblox avatars, items and their assets belong to Roblox Corporation and their creators. This is
+   a fan project and is not affiliated with or endorsed by Nintendo or Roblox.
