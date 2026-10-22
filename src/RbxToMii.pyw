@@ -33,6 +33,8 @@ class App:
         if os.environ.get('RBXTOMII_TEST_NAME'):      # automatic run (tests)
             self.name_var.set(os.environ['RBXTOMII_TEST_NAME'])
             self.root.after(1200, self.load_player)
+        elif os.environ.get('RBXTOMII_TEST_FILE'):    # automatic run (tests): a Roblox Studio file
+            self.root.after(1200, lambda: self.load_file(os.environ['RBXTOMII_TEST_FILE']))
 
     # ------------------------------------------------------------ layout
     def _ui(self):
@@ -218,12 +220,17 @@ class App:
             return
         self.work(lambda: self._load(lambda: R.fetch_player(name, log=self.say)), self.loaded)
 
-    def load_file(self):
-        p = filedialog.askopenfilename(title='Roblox file with the character (saved in Roblox Studio)',
-                                       filetypes=[('Roblox', '*.rbxm *.rbxmx *.rbxl *.rbxlx'), ('All files', '*.*')])
+    def load_file(self, p=None):
+        p = p or filedialog.askopenfilename(title='Roblox file with the character (saved in Roblox Studio)',
+                                            filetypes=[('Roblox', '*.rbxm *.rbxmx *.rbxl *.rbxlx'), ('All files', '*.*')])
         if not p:
             return
-        models = R.rig_from_file(p)
+        try:
+            models = R.rig_from_file(p)
+        except Exception as e:
+            messagebox.showerror(TITLE, 'This file could not be read as a Roblox Studio file (%s).\n\n'
+                                        'Save the character in Roblox Studio with "Save to File..." as .rbxm or .rbxl.' % e)
+            return
         if not models:
             messagebox.showerror(TITLE, 'There is no complete R15 character (a model with a Humanoid) in this file.')
             return

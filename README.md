@@ -7,7 +7,7 @@ A Windows tool for the **Ryujinx** emulator.
 
 Full 1-minute video: [RbxToMii_1.1_Video.mp4](https://github.com/Minnteee/RbxToMii/releases/download/v1.1.0/RbxToMii_1.1_Video.mp4)
 
-> **Version 1.1 – final version, for game version 1.0.4.** Tested with **Ryujinx Canary 1.3.269** (firmware 22.1.0).
+> **Version 1.1.1 – for game version 1.0.4** (bug-fix update of the final version 1.1). Tested with **Ryujinx Canary 1.3.269** (firmware 22.1.0).
 > The **source code** is in the folder [`src`](src).
 > This repository does not take contributions: please no pull requests, issues or bug reports.
 
@@ -21,10 +21,14 @@ Made for **Ryujinx** and tested with **Ryujinx Canary 1.3.269** (firmware 22.1.0
 
 ## Download
 
-From [**Releases**](https://github.com/Minnteee/RbxToMii/releases/latest): `RbxToMii-1.1.0.zip`
+From [**Releases**](https://github.com/Minnteee/RbxToMii/releases/latest): `RbxToMii-1.1.1.zip`
 
 ## What's new
 
+- **1.1.1** – Bug fixes:
+  - **Roblox Studio files with layered clothing** (3D jackets, dresses, pants, shoes) no longer stop with an error. Layered clothing needs two invisible "cages" that tell how it wraps around the body, and Roblox gives most of them out only after a login. RbxToMii now also takes them from Roblox's cache on your PC (Roblox Studio fills it when it shows the character), so the clothing is fitted to the body like in Roblox. If a cage is really missing, the item is shown where Roblox put it and RbxToMii tells you, instead of an error. The cage of a Dynamic Head is taken from the cache too.
+  - **Bodies with their own texture as a SurfaceAppearance** (newer bundles, for example animal bodies like *Capybara*) now show that texture instead of the plain body colour. Like in Roblox, classic shirts and pants are not drawn over such a body.
+  - A few error messages that were still in German are now in English.
 - **1.1.0** (final version) – Updated for game version **1.0.4**. The game's size table changes with every update; with the old one from 1.0.1, game version 1.0.4 crashed right after starting (reported on GameBanana – thanks!). RbxToMii now also warns when your save is from another game version, and it respects mods you turned off in Ryujinx (Manage Mods). Tested with Ryujinx Canary 1.3.269.
   - **Faces:** Roblox heads show their real face again. Many Roblox heads have exactly the same size, and RbxToMii sometimes took the wrong one from Roblox's cache (the face then had no mouth); now the head's texture decides. Heads with a SurfaceAppearance show their face, older heads show the avatar's mood (smile, smirk, …) too, and when the mood can't be read it shows Roblox's default smile. A stand-in head (when the real one is login-only) now gets Roblox's classic face with eyes instead of only a smile.
   - **Arms:** arms move like Roblox's own block arms. Before, arm blocks got crumpled in strong poses (clapping, eating, hands on hips).
@@ -46,7 +50,7 @@ You do **not** need Python, Visual C++ downloads, other mods or any other instal
 
 ## Install
 
-1. Download `RbxToMii-1.1.0.zip` and unzip it (right-click → *Extract All*) to a folder you can write to, for example your Desktop or Documents (not *Program Files*). Don't start it from inside the zip.
+1. Download `RbxToMii-1.1.1.zip` and unzip it (right-click → *Extract All*) to a folder you can write to, for example your Desktop or Documents (not *Program Files*). Don't start it from inside the zip.
 2. Start **`RbxToMii.exe`**. Windows may say *"Windows protected your PC"* the first time, because the program is not signed. Click **More info → Run anyway**. Some antivirus programs also distrust new unsigned programs; if yours blocks RbxToMii, allow it there.
 
 That's all. RbxToMii makes its Ryujinx mod folder itself the first time you add a character.

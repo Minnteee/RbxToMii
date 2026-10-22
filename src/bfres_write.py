@@ -192,7 +192,7 @@ def rename_strings(data, mapping):
                 hits += 1
             k = out.find(old_ptr, k + 1, B.buf_data)
         if not hits:
-            raise ValueError('kein Verweis auf %s gefunden' % old)
+            raise ValueError('no reference to %s found' % old)
         pos = _align(end, 4)
     struct.pack_into('<I', out, rlt + 16 + 12, pos)
     return bytes(out)

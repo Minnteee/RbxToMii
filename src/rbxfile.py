@@ -161,7 +161,7 @@ def load_bytes(b):
         return doc
     if b.lstrip().startswith(b'<roblox'):
         return read_xml(b)
-    raise ValueError('keine Roblox-Modelldatei')
+    raise ValueError('not a Roblox Studio file (.rbxm / .rbxl)')
 
 
 def load(path):

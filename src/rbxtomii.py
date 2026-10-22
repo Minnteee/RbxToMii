@@ -441,6 +441,9 @@ def fill_from_cache(rig, store, todo, log=say):
             if at.get(pick['h']):
                 anchors_login.append(at[pick['h']])
 
+    if idx and any(t[1] == 'cage' for t in todo):
+        found.update(find_cages(rig, store, todo, idx, at, anchors + anchors_login, root, log))
+
     def candidates(anc, minutes, limit=600):
         if not anc:
             return []
@@ -521,6 +524,120 @@ def fill_from_cache(rig, store, todo, log=say):
         found[aid] = 'cache'
     store.save()
     return found, idx
+
+
+def _mesh_key(n, size):
+    return int(n), tuple(round(float(x), 3) for x in size)
+
+
+def find_cages(rig, store, todo, idx, at, anchors, root, log=say):
+    """cages of layered clothing (WrapLayer: outer cage + inner 'reference' cage) and of body parts (WrapTarget, e.g. a
+    dynamic head): Roblox gives most of them out only after a login. Roblox (also Roblox Studio) loads them in the same
+    minute as the avatar's other meshes, so: cached meshes of that minute that are no known file of this avatar.
+    Layered clothing cages all share one point layout with the body's cages (about 4900 points, as tall as a body);
+    the inner cage is the smaller one of an item's pair."""
+    if not anchors:
+        return {}
+    lo, hi = min(anchors) - 120000, max(anchors) + 120000
+    known = {}
+    for aid, kind, what, p in needed_assets(rig):
+        if kind in ('mesh', 'cage') and store.have(aid):
+            try:
+                m = rbxmesh.load(store.path(aid))
+                known[_mesh_key(len(m['pos']), m['pos'].max(0) - m['pos'].min(0))] = aid
+            except Exception:
+                pass
+    cands = [m for m in idx['meshes'] if lo <= at.get(m['h'], 0) <= hi and _mesh_key(m['n'], m['size']) not in known]
+    body_keys = set()                    # point layout of the body's cages (to recognise a cage)
+    for p in rig['parts']:
+        c = (p.get('wrap_target') or {}).get('cage')
+        if c and store.have(c):
+            try:
+                body_keys |= set(int(k) for k in rbxchar.uv_keys(rbxmesh.load(store.path(c))['uv']))
+            except Exception:
+                pass
+
+    def is_cage(m):
+        try:
+            mesh = rbxmesh.parse(rbxcache.read(m['h'], root))
+        except Exception:
+            return False
+        k = rbxchar.uv_keys(mesh['uv'])
+        return bool(body_keys) and float(np.isin(k, list(body_keys)).mean()) > 0.5
+
+    full = [m for m in cands if m['n'] >= 3000 and m['size'][1] > 3.0]
+    full = [m for m in full if is_cage(m)]
+    vol = lambda m: float(np.prod(m['size']))
+    found, used = {}, set()
+
+    def take(aid, m, what):
+        open(store.path(aid), 'wb').write(rbxcache.read(m['h'], root))
+        store.status[str(aid)] = {'status': 'cache', 'cache': m['h'], 'cage_match': what}
+        found[aid] = 'cache'
+        used.add(m['h'])
+
+    items = {}                           # layered item -> what is missing
+    for aid, kind, what, p in todo:
+        if kind == 'cage' and what in ('cage', 'reference') and p is not None:
+            items.setdefault(p['path'], {'p': p})[what] = aid
+    for path, it in sorted(items.items(), key=lambda kv: -vol({'size': kv[1]['p'].get('size') or [0, 0, 0]})):
+        msize = np.array(it['p'].get('initial_size') or it['p'].get('size') or [0, 0, 0], float)
+        free = [m for m in full if m['h'] not in used]
+        if 'cage' in it and 'reference' in it:
+            best = None
+            for a in free:               # inner a, outer b: same layout, b encloses a and the item
+                for b in free:
+                    if a is b or a['n'] != b['n'] or vol(a) >= vol(b):
+                        continue
+                    sa, sb = np.array(a['size']), np.array(b['size'])
+                    if (sa > sb + 1e-3).any():
+                        continue
+                    score = float(np.maximum(0, msize - sb).sum()) * 10 + float((sb - msize).clip(0).sum()) * 0.1
+                    if best is None or score < best[0]:
+                        best = (score, a, b)
+            if best:
+                take(it['reference'], best[1], 'inner cage of %s' % path)
+                take(it['cage'], best[2], 'outer cage of %s' % path)
+        elif free:                       # one of the two is there: the other one fits around / inside it
+            wl = it['p'].get('wrap_layer') or {}
+            want = 'reference' if 'reference' in it else 'cage'
+            other = wl.get('cage' if want == 'reference' else 'reference')
+            if other and store.have(other):
+                om = rbxmesh.load(store.path(other))
+                os_ = om['pos'].max(0) - om['pos'].min(0)
+                if want == 'reference':  # inner cage: inside the outer one, the biggest such mesh
+                    ok = [m for m in free if m['n'] == len(om['pos']) and (np.array(m['size']) <= os_ + 1e-3).all()]
+                    ok.sort(key=lambda m: -vol(m))
+                else:                    # outer cage: around the inner one, the smallest such mesh
+                    ok = [m for m in free if m['n'] == len(om['pos']) and (np.array(m['size']) >= os_ - 1e-3).all()]
+                    ok.sort(key=vol)
+                if ok:
+                    take(it[want], ok[0], '%s of %s' % (want, path))
+    # most layered clothing is made on Roblox's standard inner cage: an inner cage still missing is taken from another
+    # item of this avatar with the same point count
+    for path, it in items.items():
+        aid = it.get('reference')
+        if aid and aid not in found:
+            for p in rig['parts']:
+                r = (p.get('wrap_layer') or {}).get('reference')
+                if r and r != aid and store.have(r):
+                    shutil.copy2(store.path(r), store.path(aid))
+                    store.status[str(aid)] = {'status': 'cache', 'same_as': r, 'cage_match': 'standard inner cage'}
+                    found[aid] = 'cache'
+                    break
+    # cages of body parts (dynamic heads): as big as the part
+    for aid, kind, what, p in todo:
+        if kind != 'cage' or what != 'target' or p is None or aid in found:
+            continue
+        ps = np.array(p.get('initial_size') or p.get('size') or [0, 0, 0], float)
+        ok = [m for m in cands if m['h'] not in used and m['n'] < 3000 and
+              (np.abs(np.array(m['size']) - ps) <= 0.12 * ps + 0.02).all()]
+        ok.sort(key=lambda m: float(np.abs(np.array(m['size']) - ps).sum()))
+        if ok:
+            take(aid, ok[0], 'cage of %s' % p['path'])
+    if found:
+        log('Found %d clothing/head cages in Roblox\'s cache.' % len(found))
+    return found
 
 
 def uv_misfit(mesh, tex):
@@ -718,9 +835,18 @@ def finish_character(key, user, rig, report, store, pdir, log=say):
     head = next((p for p in rig['parts'] if p['path'] == 'Head'), {})
     head_real = bool(head.get('mesh')) and store.have(head['mesh'])
     missing = [{'id': a, 'part': t, 'name': n} for a, t, n in report['missing']]
+    body = [p for p in rig['parts'] if p['path'] in rbxassemble.BODY[1:]]
+    if body and all((p.get('surface') or {}).get('ColorMap') for p in body):
+        # a body with its own texture (SurfaceAppearance): Roblox draws no classic clothing on it, so it is not missing
+        missing = [m for m in missing if m['part'] not in ('T-shirt', 'Shirt', 'Pants')]
     for aid, kind, what, p in still:
         if kind == 'mesh' and p is not None and p['path'] != 'Head':
             missing.append({'id': aid, 'part': p['path'].split('.')[0], 'name': ''})
+    for p in rig['parts']:          # layered clothing without its cages: shown, but not fitted to the body
+        wl = p.get('wrap_layer') or {}
+        if wl and not all(wl.get(k) and store.have(wl[k]) for k in ('cage', 'reference')):
+            missing.append({'id': wl.get('cage') or wl.get('reference'), 'part': 'Fit of layered clothing',
+                            'name': p['path'].split('.')[0]})
     ch = {'key': key, 'user': user, 'rig': rig, 'dir': pdir, 'head_real': head_real, 'mood': mood_name if w is not None else None,
           'missing': missing, 'from_cache': {str(k): v for k, v in found.items()}, 'defaults': report['default'],
           'ok': len(report['ok'])}

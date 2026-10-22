@@ -541,7 +541,8 @@ def head_targets(rw, head_part, n=5.0):
     d = (rw - cm) / em
     d /= np.maximum(np.linalg.norm(d, axis=1, keepdims=True), 1e-9)
     rxz = np.sqrt(d[:, 0] ** 2 + d[:, 2] ** 2)
-    t = (np.abs(d[:, 1]) ** n + rxz ** n) ** (-1.0 / n)
+    s = np.abs(d[:, 1]) ** n + rxz ** n
+    t = np.where(s > 1e-12, s, 1.0) ** (-1.0 / n)          # a point right at the centre stays there
     loc = d * t[:, None] * eh
     return loc @ H[:3, :3].T + H[:3, 3]
 
@@ -600,7 +601,11 @@ def conform(inner, outer, margin=0.015, reach=0.12):
 
 
 # ---------------------------------------------------------------- build
+UNFITTED = []        # layered clothing of the last build() that could not be fitted to the body (cages missing)
+
+
 def build(name, rigs):
+    UNFITTED.clear()
     rig = rigs[name]
     parts = {p['path']: p for p in rig['parts']}
     pieces = []
@@ -639,18 +644,25 @@ def build(name, rigs):
             if m.any():
                 uv[m] = box_uv(g, fc, P[m], gbox[g])
         tex = bot if g in ('LeftLeg', 'RightLeg') else top
-        # packages (Paladin, Rthro, ...) bring their own texture, laid out on the mesh's own UVs
-        own = load_image(p['tex']) if p.get('tex') else None
+        # packages (Paladin, Rthro, ...) bring their own texture, laid out on the mesh's own UVs: newer bodies
+        # (e.g. "Capybara") in a SurfaceAppearance (ColorMap), older ones as TextureID
+        sa = p.get('surface') or {}
+        tid = sa.get('ColorMap') or p.get('tex')
+        own = load_image(tid) if tid else None
+        if own is not None and sa.get('ColorMap') and sa.get('color') and tuple(sa['color'][:3]) != (255, 255, 255):
+            own = own.copy()
+            own[..., :3] = (own[..., :3].astype(np.float32) * np.array(sa['color'][:3], np.float32) / 255).astype(np.uint8)
         if own is not None and mesh.get('uv') is not None and len(mesh['uv']) == len(pw):
             muv = np.asarray(mesh['uv'], np.float64)[F].reshape(-1, 2)
-            e = pkg.setdefault(p['tex'], {'img': own, 'colour': body_color(rig, g), 'legs': g in ('LeftLeg', 'RightLeg'),
-                                          'items': []})
+            e = pkg.setdefault(tid, {'img': own, 'colour': body_color(rig, g), 'legs': g in ('LeftLeg', 'RightLeg'),
+                                     'items': [], 'surface': bool(sa.get('ColorMap'))})
             e['items'].append((len(pieces), muv, uv))
         pieces.append(Piece(pn, P, N, uv, np.arange(len(P)).reshape(-1, 3), tex=tex, attach=pn, kind='body'))
     if pkg:
         layers = clothing_layers(rig, name)
         for e in pkg.values():
-            lay = (layers[1] if e['legs'] else layers[0]) if layers is not None else None
+            # Roblox draws no classic clothing on body parts with a SurfaceAppearance
+            lay = (layers[1] if e['legs'] else layers[0]) if layers is not None and not e['surface'] else None
             tris = [(muv.reshape(-1, 3, 2), buv.reshape(-1, 3, 2)) for _, muv, buv in e['items']]
             baked = bake_package_texture(e['img'], e['colour'], tris, lay)
             for i, muv, _ in e['items']:
@@ -741,6 +753,10 @@ def build(name, rigs):
     if layered:
         target = body_cage_map(parts)
         for pc in layered:
+            wl = pc.handle['wrap_layer']
+            if not all(wl.get(k) and os.path.exists(os.path.join(NET3D, '%d.bin' % wl[k])) for k in ('cage', 'reference')):
+                UNFITTED.append(pc.name)          # its cages only come with a login: it stays as Roblox placed it
+                continue
             target = fit_layer(pc, pc.handle, target, head_part=parts['Head'])
         # keep inner layers under outer ones (the crop shirt under the hoodie, ...)
         for i, inner in enumerate(layered):

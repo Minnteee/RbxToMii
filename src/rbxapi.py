@@ -54,7 +54,7 @@ def user_lookup(name):
         return {'id': j['id'], 'name': j['name'], 'displayName': j.get('displayName', j['name'])}
     j = getj('https://users.roblox.com/v1/usernames/users', {'usernames': [s], 'excludeBannedUsers': True})
     if not j.get('data'):
-        raise LookupError('Roblox-Spieler "%s" gibt es nicht' % s)
+        raise LookupError('There is no Roblox player called "%s".' % s)
     d = j['data'][0]
     return {'id': d['id'], 'name': d['name'], 'displayName': d.get('displayName', d['name'])}
 
