@@ -3,6 +3,10 @@
 **Put a Roblox avatar on a Mii in _Tomodachi Life: Living the Dream_.**
 A Windows tool for the **Ryujinx** emulator.
 
+![RbxToMii in 30 seconds: load builderman, add him to a Mii, see him in the game](docs/RbxToMii_Video.gif)
+
+Full 1-minute video: [RbxToMii_1.1_Video.mp4](https://github.com/Minnteee/RbxToMii/releases/download/v1.1.0/RbxToMii_1.1_Video.mp4)
+
 > **Version 1.1 – final version, for game version 1.0.4.** Tested with **Ryujinx Canary 1.3.269** (firmware 22.1.0).
 > The **source code** is in the folder [`src`](src).
 > This repository does not take contributions: please no pull requests, issues or bug reports.
