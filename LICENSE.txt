@@ -2,7 +2,8 @@ RbxToMii License (credit required)
 
 Copyright (c) 2026 Minnteee - https://github.com/Minnteee/RbxToMii
 
-1. You may download, use and share the release files of RbxToMii for free.
+1. You may download, use and share the release files and the source code of RbxToMii for free. You may change the
+   source code; if you publish anything made from it, points 2 to 5 apply.
 
 2. Credit is required. If you publish anything that is based on, derived from or made with this project - for
    example your own or a better version of RbxToMii, another tool or mod that uses its files, code, data or

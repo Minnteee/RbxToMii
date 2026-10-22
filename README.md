@@ -3,7 +3,8 @@
 **Put a Roblox avatar on a Mii in _Tomodachi Life: Living the Dream_.**
 A Windows tool for the **Ryujinx** emulator.
 
-> **First public version (1.0).** I'm fixing things first, the **source code will be uploaded later**.
+> **Version 1.1 – final version, for game version 1.0.4.** Tested with **Ryujinx Canary 1.3.269** (firmware 22.1.0).
+> The **source code** is in the folder [`src`](src).
 > This repository does not take contributions: please no pull requests, issues or bug reports.
 
 ## What it does
@@ -12,19 +13,27 @@ Type a Roblox username, pick a Mii from your island, press one button, and the M
 
 How it works: the game can only draw Mii bodies. So RbxToMii turns a full-body costume and a full head mask of the game into the Roblox character and puts both on your Mii. It saves them as a normal Ryujinx mod (folder `RbxToMii`) and changes your save so that the Mii wears them.
 
-Made for **Ryujinx** and tested with Ryujinx 1.3.287 on Windows. **I can't guarantee that it works with other emulators.** Only game version **1.0.1** is supported.
+Made for **Ryujinx** and tested with **Ryujinx Canary 1.3.269** (firmware 22.1.0) on Windows. **I can't guarantee that it works with other emulators.** RbxToMii 1.1 is made for game version **1.0.4** (the current one). Still on game version 1.0.1? Use RbxToMii 1.0.0 from the releases.
 
 ## Download
 
-From [**Releases**](https://github.com/Minnteee/RbxToMii/releases/latest): `RbxToMii-1.0.0.zip`
+From [**Releases**](https://github.com/Minnteee/RbxToMii/releases/latest): `RbxToMii-1.1.0.zip`
+
+## What's new
+
+- **1.1.0** (final version) – Updated for game version **1.0.4**. The game's size table changes with every update; with the old one from 1.0.1, game version 1.0.4 crashed right after starting (reported on GameBanana – thanks!). RbxToMii now also warns when your save is from another game version, and it respects mods you turned off in Ryujinx (Manage Mods). Tested with Ryujinx Canary 1.3.269.
+  - **Faces:** Roblox heads show their real face again. Many Roblox heads have exactly the same size, and RbxToMii sometimes took the wrong one from Roblox's cache (the face then had no mouth); now the head's texture decides. Heads with a SurfaceAppearance show their face, older heads show the avatar's mood (smile, smirk, …) too, and when the mood can't be read it shows Roblox's default smile. A stand-in head (when the real one is login-only) now gets Roblox's classic face with eyes instead of only a smile.
+  - **Arms:** arms move like Roblox's own block arms. Before, arm blocks got crumpled in strong poses (clapping, eating, hands on hips).
+  - Very old classic T-shirts, shirts and pants (from Roblox's first years, like builderman's) are found again.
+- **1.0.0** – First version (game version 1.0.1, Ryujinx 1.3.287).
 
 ## What you need
 
 | | What | Notes |
 |---|---|---|
 | ✔ | Windows 10 or 11, 64-bit | |
-| ✔ | Ryujinx (tested: 1.3.287) | set up with your own game dump, keys and firmware |
-| ✔ | Your own copy of Tomodachi Life: Living the Dream **with update 1.0.1** | in Ryujinx: right-click the game → *Manage Title Updates* → select 1.0.1. Other versions don't work. |
+| ✔ | Ryujinx (tested: Ryujinx Canary 1.3.269, firmware 22.1.0) | set up with your own game dump, keys and firmware |
+| ✔ | Your own copy of Tomodachi Life: Living the Dream **with update 1.0.4** | in Ryujinx: right-click the game → *Manage Title Updates* → select 1.0.4. Other versions don't work with this release. |
 | ✔ | An island with at least one Mii, saved once | RbxToMii changes this save |
 | ✔ | Internet connection | RbxToMii loads avatars from Roblox's public servers (no login, no password) |
 | ➕ optional | Roblox (the app) or **Roblox Studio**, on the same PC | only for login-only items, see [Missing items](#missing-items-roblox-studio) |
@@ -33,7 +42,7 @@ You do **not** need Python, Visual C++ downloads, other mods or any other instal
 
 ## Install
 
-1. Download `RbxToMii-1.0.0.zip` and unzip it (right-click → *Extract All*) to a folder you can write to, for example your Desktop or Documents (not *Program Files*). Don't start it from inside the zip.
+1. Download `RbxToMii-1.1.0.zip` and unzip it (right-click → *Extract All*) to a folder you can write to, for example your Desktop or Documents (not *Program Files*). Don't start it from inside the zip.
 2. Start **`RbxToMii.exe`**. Windows may say *"Windows protected your PC"* the first time, because the program is not signed. Click **More info → Run anyway**. Some antivirus programs also distrust new unsigned programs; if yours blocks RbxToMii, allow it there.
 
 That's all. RbxToMii makes its Ryujinx mod folder itself the first time you add a character.
@@ -68,6 +77,7 @@ That's all. RbxToMii makes its Ryujinx mod folder itself the first time you add 
 - Before every change RbxToMii makes a backup in `RbxToMii\backups`: the replaced files and your save.
 - You see the changes after (re)starting the game.
 - Other mods that change the game's clothing table (`RSDB/ClothModelParam…`) or size table (`System/Resource/ResourceSizeTable…`) can't be used together with RbxToMii.
+- **The game crashes right after starting?** Then your game version doesn't fit this RbxToMii (1.1 is for game version 1.0.4). Check *Manage Title Updates* in Ryujinx, or turn the RbxToMii mod off under *Manage Mods*. After a new game update, RbxToMii needs an update too.
 
 ## Missing items (Roblox Studio)
 
@@ -98,13 +108,13 @@ Close Ryujinx and delete the `RbxToMii` mod folder (or disable it under *Manage 
 
 ## Limits
 
-- The game can only draw Mii bodies. So a Roblox character is worn as a full-body costume plus a full head mask on the Mii skeleton, scaled as a whole. Very wide avatars bend a bit at the shoulders when they raise their arms.
+- The game can only draw Mii bodies. So a Roblox character is worn as a full-body costume plus a full head mask on the Mii skeleton, scaled as a whole. The arm blocks turn around the Mii's joints, which sit a bit further in than Roblox's: in some poses arm blocks overlap a little at the shoulder or elbow (Roblox characters do that too).
 - In the resident list and the Mii bar, Roblox heads look small, because the game frames these pictures for a Mii head.
 - If the game later dresses a Roblox Mii differently, put the Roblox suit and head on it again in the wardrobe.
 
-## Contributions
+## Source code
 
-Not right now. This is the first public version: I'll fix things myself first and upload the source code later. Please don't open pull requests or issues.
+The source code (Python) is in the folder [`src`](src); how to build `RbxToMii.exe` from it is in [src/README.md](src/README.md). This is the final version: the repository doesn't take pull requests or issues.
 
 ## License and credits
 
