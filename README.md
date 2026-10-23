@@ -23,21 +23,6 @@ Made for **Ryujinx** and tested with **Ryujinx Canary 1.3.269** (firmware 22.1.0
 
 From [**Releases**](https://github.com/Minnteee/RbxToMii/releases/latest): `RbxToMii-1.1.2.zip`
 
-## What's new
-
-- **1.1.2**
-  - New option **Keep the Mii's own head**: tick it, and only the body becomes Roblox. The Mii keeps its own head and hair (the Roblox head is still in the wardrobe if you want it later).
-  - Fixed: **small spots in the wrong colour on hands and feet**, for example blue spots on red hands or boots. The tops of hands, feet and shoes got the colour of the shoulder or hip from the shirt and pants; now they get their own colour.
-- **1.1.1** – Bug fixes:
-  - **Roblox Studio files with layered clothing** (3D jackets, dresses, pants, shoes) no longer stop with an error. Layered clothing needs two invisible "cages" that tell how it wraps around the body, and Roblox gives most of them out only after a login. RbxToMii now also takes them from Roblox's cache on your PC (Roblox Studio fills it when it shows the character), so the clothing is fitted to the body like in Roblox. If a cage is really missing, the item is shown where Roblox put it and RbxToMii tells you, instead of an error. The cage of a Dynamic Head is taken from the cache too.
-  - **Bodies with their own texture as a SurfaceAppearance** (newer bundles, for example animal bodies like *Capybara*) now show that texture instead of the plain body colour. Like in Roblox, classic shirts and pants are not drawn over such a body.
-  - A few error messages that were still in German are now in English.
-- **1.1.0** (final version) – Updated for game version **1.0.4**. The game's size table changes with every update; with the old one from 1.0.1, game version 1.0.4 crashed right after starting (reported on GameBanana – thanks!). RbxToMii now also warns when your save is from another game version, and it respects mods you turned off in Ryujinx (Manage Mods). Tested with Ryujinx Canary 1.3.269.
-  - **Faces:** Roblox heads show their real face again. Many Roblox heads have exactly the same size, and RbxToMii sometimes took the wrong one from Roblox's cache (the face then had no mouth); now the head's texture decides. Heads with a SurfaceAppearance show their face, older heads show the avatar's mood (smile, smirk, …) too, and when the mood can't be read it shows Roblox's default smile. A stand-in head (when the real one is login-only) now gets Roblox's classic face with eyes instead of only a smile.
-  - **Arms:** arms move like Roblox's own block arms. Before, arm blocks got crumpled in strong poses (clapping, eating, hands on hips).
-  - Very old classic T-shirts, shirts and pants (from Roblox's first years, like builderman's) are found again.
-- **1.0.0** – First version (game version 1.0.1, Ryujinx 1.3.287).
-
 ## What you need
 
 | | What | Notes |
