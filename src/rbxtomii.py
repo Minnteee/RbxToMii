@@ -187,8 +187,10 @@ def read_table(env):
 
 
 def emulator_running(ignore=None):
-    """paths of running Ryujinx processes (any name, also a renamed exe)"""
-    ps = ("Get-Process | Where-Object { $_.ProcessName -match 'Ryujinx' -or $_.MainWindowTitle -match '^Ryujinx' } | "
+    """paths of running Ryujinx processes (any name, also a renamed exe). A terminal showing Ryujinx's console
+    ("Ryujinx Console ...") is not the emulator: it can stay open after Ryujinx has closed."""
+    ps = ("Get-Process | Where-Object { $_.ProcessName -match 'Ryujinx' -or ($_.MainWindowTitle -match '^Ryujinx' -and "
+          "$_.ProcessName -notmatch '^(WindowsTerminal|OpenConsole|conhost|cmd|powershell|pwsh)$') } | "
           "ForEach-Object { if ($_.Path) { $_.Path } else { $_.ProcessName } }")
     try:
         out = subprocess.run(['powershell.exe', '-NoProfile', '-Command', ps], capture_output=True, text=True, timeout=60,
@@ -931,13 +933,15 @@ def build(ch, place, log=say):
     log('Building the Tomodachi Life model …')
     files, stats, extra = BRM.make_character_files(ch['key'], {ch['key']: ch['rig']}, place['tag'], place['body'], place['mask'],
                                                    ctx, (2048, 2048), log=lambda s: None)
-    prev = preview(extra, ctx)
+    # preview[0]: Roblox body + Roblox head, preview[1]: the body alone ("Keep the Mii's own head")
+    prev = preview(extra, ctx) + preview(extra, ctx, head=False)
     return {'files': files, 'stats': stats, 'preview': prev, 'icon_body': extra['icon_body'], 'icon_head': extra['icon_head'],
             'place': place, 'key': ch['key']}
 
 
-def preview(extra, ctx, size=520):
-    """front view (slightly turned) of the finished model in the Mii standing pose, like in the game"""
+def preview(extra, ctx, size=520, head=True):
+    """front view (slightly turned) of the finished model in the Mii standing pose, like in the game; head=False: the
+    body alone, framed as if the head were there (the Mii keeps its own head)"""
     import rrender
     A = extra['arrays']
 
@@ -950,6 +954,8 @@ def preview(extra, ctx, size=520):
     h = P()
     h.pos = miimap.mask_to_world(A['P2'], ctx.rest, D, templates()['mask_scale'])
     h.uv, h.faces, h.tex = A['UV2'], A['T2'], extra['atlas_head']
+    if not head:      # body only, in the same frame (the head's points still set the picture size)
+        h.faces = np.zeros((0, 3), np.int64)
     im = rrender.render([b, h], yaw=180 + 20, pitch=-5, size=size, alpha=True, cull=True)
     bg = Image.new('RGBA', im.size, (238, 241, 245, 255))
     bg.alpha_composite(im)
@@ -1010,13 +1016,17 @@ def island_miis(env):
     return out
 
 
-def dress_one(M, i, body, mask):
-    """Roblox suit (All slot) + head (Headwear) on Mii i, everything else off; standard height / build"""
+def dress_one(M, i, body, mask, keep_head=False):
+    """Roblox suit (All slot) + head (Headwear) on Mii i, everything else off; standard height / build.
+    keep_head: only the suit - no headwear, the face paint stays: the Mii keeps its own head"""
     import ugcsave as U
     pieces = {s: (0, 0, None) for s in ('Tops', 'Topslong', 'BottomsA', 'BottomsB', 'Shoes', 'Accessory')}
     pieces['All'] = (body, 0, None)
-    pieces['Headwear'] = (mask, 0, None)
-    U.dress_mii(M, i, pieces, facepaint=-1, front=False)
+    pieces['Headwear'] = (0, 0, None) if keep_head else (mask, 0, None)
+    if keep_head:
+        U.dress_mii(M, i, pieces)
+    else:
+        U.dress_mii(M, i, pieces, facepaint=-1, front=False)
     for f in ('#ab277b66', '#b90d9b9a', '#ed14a1bc'):
         M.set('Mii.MiiMisc.#3b098df0.' + f, -1, i)
     # standard height / build: the Roblox body is made for it (the full-mask head does not scale with the body)
@@ -1073,10 +1083,11 @@ def mark_owned(savedir, flags, cloth_indices):
     P.save()
 
 
-def install(res, ch, env, mii=None, log=say):
+def install(res, ch, env, mii=None, log=say, keep_head=False):
     """write the built files into the mod folder (spot of the character), set names and tables, make the suit + head
     owned and put them on the island Mii with index `mii` (None: files only) - after a backup of everything that
-    changes. Ryujinx must be closed: the game keeps the island in memory and would write its old state back."""
+    changes. Ryujinx must be closed: the game keeps the island in memory and would write its old state back.
+    keep_head: the Mii only gets the Roblox suit and keeps its own head (the Roblox head is still in the wardrobe)."""
     run = emulator_running()
     if run:
         raise RuntimeError('Ryujinx is still running. Close Ryujinx completely and press the button again.')
@@ -1166,12 +1177,12 @@ def install(res, ch, env, mii=None, log=say):
             mark_owned(sd, env['flags'], [it[place['body']]['cloth_index'], it[place['mask']]['cloth_index']])
         if mii is not None and os.path.exists(os.path.join(sd, 'Mii.sav')):
             M = _mii_ed(sd, env['flags'])
-            dress_one(M, mii, place['body'], place['mask'])
+            dress_one(M, mii, place['body'], place['mask'], keep_head)
             M.save(os.path.join(sd, 'Mii.sav.new'))
             os.replace(os.path.join(sd, 'Mii.sav.new'), os.path.join(sd, 'Mii.sav'))
     if mii_name:
-        log('%s now wears the Roblox look of %s.' % (mii_name, ch['key']))
-    return {'backup': zp, 'files': len(files), 'nick': nick, 'mii': mii_name}
+        log('%s now wears the Roblox %s of %s.' % (mii_name, 'body' if keep_head else 'look', ch['key']))
+    return {'backup': zp, 'files': len(files), 'nick': nick, 'mii': mii_name, 'keep_head': keep_head}
 
 
 # ================================================================ CLI for tests

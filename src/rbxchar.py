@@ -31,6 +31,11 @@ RIGHT_LIMB = {'L': (19, 355, 64, 128), 'B': (85, 355, 64, 128), 'R': (151, 355, 
 LEFT_LIMB = {'F': (308, 355, 64, 128), 'L': (374, 355, 64, 128), 'B': (440, 355, 64, 128), 'R': (506, 355, 64, 128),
              'U': (308, 289, 64, 64), 'D': (308, 485, 64, 64)}
 RECTS = {'Torso': TORSO_RECTS, 'RightArm': RIGHT_LIMB, 'LeftArm': LEFT_LIMB, 'RightLeg': RIGHT_LIMB, 'LeftLeg': LEFT_LIMB}
+# the template's top square (U) is the top of the highest part of the torso / a limb (neck line, shoulder, hip), the
+# bottom square (D) the bottom of the lowest one (crotch, palm, sole) - like in Roblox. Faces of other parts that point
+# up or down (the top of a claw or a boot) take the side they are on (1.1.2: before they got the shoulder / hip colour)
+TOP_PARTS = {'UpperTorso', 'LeftUpperArm', 'RightUpperArm', 'LeftUpperLeg', 'RightUpperLeg'}
+BOTTOM_PARTS = {'LowerTorso', 'LeftHand', 'RightHand', 'LeftFoot', 'RightFoot'}
 # which body part an accessory attachment belongs to (fallback when the part has no such attachment)
 ATTACH_FALLBACK = {'Hat': 'Head', 'Hair': 'Head', 'FaceFront': 'Head', 'FaceCenter': 'Head', 'Neck': 'UpperTorso',
                    'BodyFront': 'UpperTorso', 'BodyBack': 'UpperTorso', 'LeftCollar': 'UpperTorso',
@@ -143,7 +148,32 @@ def composites(rig, name):
     if tshirt is not None:
         t = tshirt.resize((128, 128), Image.LANCZOS)
         top.alpha_composite(t, (231, 74))
-    return np.asarray(top.convert('RGBA')), np.asarray(bot.convert('RGBA'))
+    return extend_rects(np.asarray(top.convert('RGBA'))), extend_rects(np.asarray(bot.convert('RGBA')))
+
+
+def extend_rects(img):
+    """outside the template rectangles: the colour of the nearest rectangle edge (the game also shows smaller copies
+    of the texture; the template's grey background and labels must not bleed into the body parts there)"""
+    H, W = img.shape[:2]
+    ys, xs = np.mgrid[0:H, 0:W]
+    best = np.full((H, W), np.iinfo(np.int32).max, np.int64)
+    sx, sy = xs.copy(), ys.copy()
+    for rects in (TORSO_RECTS, RIGHT_LIMB, LEFT_LIMB):
+        for x, y, w, h in rects.values():
+            cx, cy = np.clip(xs, x, x + w - 1), np.clip(ys, y, y + h - 1)
+            d = (cx - xs) ** 2 + (cy - ys) ** 2
+            m = d < best
+            best[m], sx[m], sy[m] = d[m], cx[m], cy[m]
+    return np.ascontiguousarray(img[sy, sx])
+
+
+def side_faces(cen, fn, axis_xz):
+    """F/B/R/L for faces pointing up / down that must not use the top / bottom square: the side of the part they lie
+    on (seen from the part's vertical axis), else the horizontal part of their normal (character faces -Z)"""
+    d = cen[:, [0, 2]] - np.asarray(axis_xz, float)
+    h = fn[:, [0, 2]]
+    v = np.where((np.abs(d).max(1) > 0.02)[:, None], d, h)
+    return np.where(np.abs(v[:, 0]) >= np.abs(v[:, 1]), np.where(v[:, 0] > 0, 'R', 'L'), np.where(v[:, 1] < 0, 'F', 'B'))
 
 
 def clothing_layers(rig, name):
@@ -637,6 +667,9 @@ def build(name, rigs):
         ax = np.abs(fn).argmax(1)
         sgn = np.sign(fn[np.arange(len(fn)), ax])
         face = np.where(ax == 2, np.where(sgn < 0, 'F', 'B'), np.where(ax == 0, np.where(sgn > 0, 'R', 'L'), np.where(sgn > 0, 'U', 'D')))
+        wrong = ((face == 'U') & (pn not in TOP_PARTS)) | ((face == 'D') & (pn not in BOTTOM_PARTS))
+        if wrong.any():
+            face[wrong] = side_faces((A + B + C)[wrong] / 3, fn[wrong], np.array(p['cf']['p'], float)[[0, 2]])
         g = GROUP[pn]
         uv = np.zeros((len(P), 2))
         for fc in 'FBRLUD':

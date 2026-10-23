@@ -7,7 +7,7 @@ A Windows tool for the **Ryujinx** emulator.
 
 Full 1-minute video: [RbxToMii_1.1_Video.mp4](https://github.com/Minnteee/RbxToMii/releases/download/v1.1.0/RbxToMii_1.1_Video.mp4)
 
-> **Version 1.1.1 – for game version 1.0.4** (bug-fix update of the final version 1.1). Tested with **Ryujinx Canary 1.3.269** (firmware 22.1.0).
+> **Version 1.1.2 – for game version 1.0.4** (update of the final version 1.1). Tested with **Ryujinx Canary 1.3.269** (firmware 22.1.0).
 > The **source code** is in the folder [`src`](src).
 > This repository does not take contributions: please no pull requests, issues or bug reports.
 
@@ -21,10 +21,13 @@ Made for **Ryujinx** and tested with **Ryujinx Canary 1.3.269** (firmware 22.1.0
 
 ## Download
 
-From [**Releases**](https://github.com/Minnteee/RbxToMii/releases/latest): `RbxToMii-1.1.1.zip`
+From [**Releases**](https://github.com/Minnteee/RbxToMii/releases/latest): `RbxToMii-1.1.2.zip`
 
 ## What's new
 
+- **1.1.2**
+  - New option **Keep the Mii's own head**: tick it, and only the body becomes Roblox. The Mii keeps its own head and hair (the Roblox head is still in the wardrobe if you want it later).
+  - Fixed: **small spots in the wrong colour on hands and feet**, for example blue spots on red hands or boots. The tops of hands, feet and shoes got the colour of the shoulder or hip from the shirt and pants; now they get their own colour.
 - **1.1.1** – Bug fixes:
   - **Roblox Studio files with layered clothing** (3D jackets, dresses, pants, shoes) no longer stop with an error. Layered clothing needs two invisible "cages" that tell how it wraps around the body, and Roblox gives most of them out only after a login. RbxToMii now also takes them from Roblox's cache on your PC (Roblox Studio fills it when it shows the character), so the clothing is fitted to the body like in Roblox. If a cage is really missing, the item is shown where Roblox put it and RbxToMii tells you, instead of an error. The cage of a Dynamic Head is taken from the cache too.
   - **Bodies with their own texture as a SurfaceAppearance** (newer bundles, for example animal bodies like *Capybara*) now show that texture instead of the plain body colour. Like in Roblox, classic shirts and pants are not drawn over such a body.
@@ -50,7 +53,7 @@ You do **not** need Python, Visual C++ downloads, other mods or any other instal
 
 ## Install
 
-1. Download `RbxToMii-1.1.1.zip` and unzip it (right-click → *Extract All*) to a folder you can write to, for example your Desktop or Documents (not *Program Files*). Don't start it from inside the zip.
+1. Download `RbxToMii-1.1.2.zip` and unzip it (right-click → *Extract All*) to a folder you can write to, for example your Desktop or Documents (not *Program Files*). Don't start it from inside the zip.
 2. Start **`RbxToMii.exe`**. Windows may say *"Windows protected your PC"* the first time, because the program is not signed. Click **More info → Run anyway**. Some antivirus programs also distrust new unsigned programs; if yours blocks RbxToMii, allow it there.
 
 That's all. RbxToMii makes its Ryujinx mod folder itself the first time you add a character.
@@ -61,9 +64,9 @@ That's all. RbxToMii makes its Ryujinx mod folder itself the first time you add 
 2. Start **`RbxToMii.exe`**. At the bottom it shows the Ryujinx folder it found (green ✓). If it doesn't find it, press **Change …** and choose the Ryujinx data folder (`%APPDATA%\Ryujinx`, or `portable` for the portable version).
 3. Type the **Roblox username** and press **Load**. Left: the avatar on Roblox. Right: how it will look in the game.
 4. If the tool shows **"Missing: …"**, some items are login-only. See [Missing items](#missing-items-roblox-studio).
-5. Under **Mii in your island**, choose the Mii that should become the character.
+5. Under **Mii in your island**, choose the Mii that should become the character. Want the Mii to keep its own head (face and hair)? Tick **Keep the Mii's own head**: then only the body becomes Roblox.
 6. Press **Add to Tomodachi Life**. Ryujinx must be closed for this, because RbxToMii writes into your save.
-7. Start the game: the Mii now looks like the Roblox character.
+7. Start the game: the Mii now looks like the Roblox character (with the box ticked: Roblox body, own head).
 
 ### Good to know
 

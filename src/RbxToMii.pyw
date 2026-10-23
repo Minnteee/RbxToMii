@@ -18,18 +18,21 @@ class App:
     def __init__(self, root):
         self.root = root
         root.title(TITLE)
-        root.geometry('700x700')
-        root.minsize(640, 680)
+        root.geometry('700x730')
+        root.minsize(640, 710)
         self.q = queue.Queue()
         self.busy = False
         self.env = None
         self.ch = None
         self.built = {}
+        self.last = None            # the last built result (its pictures)
         self.miis = []
         self._imgs = {}
         self._ui()
         self.root.after(100, self._poll)
         self.root.after(150, self.detect)
+        if os.environ.get('RBXTOMII_TEST_KEEP_HEAD'):  # automatic run (tests): "Keep the Mii's own head"
+            self.keep_head.set(True)
         if os.environ.get('RBXTOMII_TEST_NAME'):      # automatic run (tests)
             self.name_var.set(os.environ['RBXTOMII_TEST_NAME'])
             self.root.after(1200, self.load_player)
@@ -75,6 +78,12 @@ class App:
         self.mii_box.pack(side='left', padx=8)
         self.mii_box.bind('<<ComboboxSelected>>', lambda ev: self._update_add())
 
+        hrow = ttk.Frame(self.root, padding=(16, 6, 16, 0))
+        hrow.pack(fill='x')
+        self.keep_head = tk.BooleanVar(value=False)
+        ttk.Checkbutton(hrow, text="Keep the Mii's own head (only the body becomes Roblox)", variable=self.keep_head,
+                        command=self._show_game_pic).pack(side='left')
+
         act = ttk.Frame(self.root, padding=(16, 10))
         act.pack(fill='x')
         style = ttk.Style()
@@ -103,6 +112,12 @@ class App:
         self._imgs['blank%d' % col] = blank
         lb.configure(image=blank)
         return lb
+
+    def _show_game_pic(self):
+        """'In the game' picture: with the Roblox head, or the body alone when the Mii keeps its own head"""
+        if self.last is not None:
+            pics = self.last['preview']
+            self.show(self.pic_game, pics[1] if self.keep_head.get() and len(pics) > 1 else pics[0], 'game')
 
     def show(self, label, img, key):
         im = img.copy()
@@ -250,13 +265,14 @@ class App:
         ch, res = val
         self.ch = ch
         self.built = {res['place']['nr']: res}
+        self.last = res
         av = os.path.join(ch['dir'], 'avatar.png')
         if os.path.exists(av):
             a = Image.open(av).convert('RGBA')
             pic = Image.new('RGBA', a.size, (238, 241, 245, 255))
             pic.alpha_composite(a)
             self.show(self.pic_rbx, pic.convert('RGB'), 'rbx')
-        self.show(self.pic_game, res['preview'][0], 'game')
+        self._show_game_pic()
         miss = [] if ch['head_real'] else ['head (a stand-in is used)']
         miss += [m['part'].replace(' (3D)', '').lower() for m in ch['missing']]
         if miss:
@@ -338,6 +354,7 @@ class App:
             if place is None:
                 return
         ch, env = self.ch, self.env
+        keep = bool(self.keep_head.get())
 
         def go():
             res = self.built.get(place['nr'])
@@ -345,16 +362,22 @@ class App:
                 res = R.build(ch, place, log=self.say)
             self.built[place['nr']] = res
             self.say('Adding to the game …')
-            return R.install(res, ch, env, mii=mii['index'], log=self.say)
+            return R.install(res, ch, env, mii=mii['index'], log=self.say, keep_head=keep)
 
         def done(r):
             self.refresh_miis()
-            self.status.configure(text='Done: %s is now %s (backup: %s).' % (r['mii'], ch['key'], os.path.basename(r['backup'])))
+            what = 'has the body of %s and keeps its own head' % ch['key'] if keep else 'is now %s' % ch['key']
+            self.status.configure(text='Done: %s %s (backup: %s).' % (r['mii'], what, os.path.basename(r['backup'])))
             if test:
                 return
             extra = ('The Roblox items are in the mod folder "RbxToMii" (Ryujinx: right-click the game → '
                      'Open Mods Directory). It has to stay enabled under Manage Mods.')
-            messagebox.showinfo(TITLE, 'Done! %s now looks like %s.\n\nStart Tomodachi Life.\n\n%s' % (r['mii'], ch['key'], extra))
+            if keep:
+                look = ('Done! %s now has the Roblox body of %s and keeps its own head.\n'
+                        '(The Roblox head is in the wardrobe, if you want it later.)' % (r['mii'], ch['key']))
+            else:
+                look = 'Done! %s now looks like %s.' % (r['mii'], ch['key'])
+            messagebox.showinfo(TITLE, '%s\n\nStart Tomodachi Life.\n\n%s' % (look, extra))
         self.work(go, done)
 
 
